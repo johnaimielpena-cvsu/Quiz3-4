@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz 3 & 4 Selector</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --surface: #161616;
+      --surface2: #1e1e1e;
+      --border: #2a2a2a;
+      --accent: #00e5a0;
+      --accent2: #ff4d6d;
+      --accent3: #ffd166;
+      --accent4: #7b8cff;
+      --text: #f0f0f0;
+      --muted: #888;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,229,160,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,160,.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 700px;
+    }
+    .screen { display: none; animation: fadeUp .4s ease forwards; }
+    .screen.active { display: block; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.5rem 2rem;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #000;
+      font-family: 'Space Mono', monospace;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .12em;
+      padding: .3rem .7rem;
+      border-radius: 4px;
+      margin-bottom: 1.2rem;
+      text-transform: uppercase;
+    }
+    .badge.purple { background: var(--accent4); color: #fff; }
+    h1 { font-size: 2rem; font-weight: 800; line-height: 1.15; margin-bottom: .6rem; }
+    h1 span { color: var(--accent); }
+    .subtitle { color: var(--muted); font-size: .95rem; margin-bottom: 2rem; }
+    .form-group { margin-bottom: 1.2rem; }
+    label {
+      display: block;
+      font-size: .8rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: .45rem;
+    }
+    input[type="text"] {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: .95rem;
+      padding: .75rem 1rem;
+      outline: none;
+      transition: border-color .2s;
+    }
+    input:focus { border-color: var(--accent); }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .error-msg { color: var(--accent2); font-size: .82rem; margin-top: .4rem; display: none; }
+    .error-msg.show { display: block; }
+    .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+    /* ── QUIZ PICKER ── */
+    .quiz-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: .5rem;
+    }
+    .quiz-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem 1.2rem;
+      cursor: pointer;
+      transition: all .2s;
+      text-align: center;
+      user-select: none;
+    }
+    .quiz-card:hover { border-color: var(--accent); background: rgba(0,229,160,.06); transform: translateY(-2px); }
+    .quiz-card.selected { border-color: var(--accent); background: rgba(0,229,160,.1); }
+    .quiz-card.q4:hover { border-color: var(--accent4); background: rgba(123,140,255,.06); }
+    .quiz-card.q4.selected { border-color: var(--accent4); background: rgba(123,140,255,.1); }
+    .quiz-num {
+      font-family: 'Space Mono', monospace;
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: .4rem;
+    }
+    .quiz-card.q4 .quiz-num { color: var(--accent4); }
+    .quiz-title { font-size: .85rem; font-weight: 600; color: var(--muted); }
+    .quiz-desc { font-size: .75rem; color: var(--muted); margin-top: .3rem; opacity: .7; }
+    .error-pick { color: var(--accent2); font-size: .82rem; margin-top: .6rem; display: none; }
+    .error-pick.show { display: block; }
+
+    .btn {
+      display: inline-block;
+      padding: .8rem 1.8rem;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-primary { background: var(--accent); color: #000; width: 100%; }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ── QUIZ SCREEN ── */
+    .progress-bar-wrap { background: var(--surface2); border-radius: 99px; height: 5px; margin-bottom: 1.8rem; overflow: hidden; }
+    .progress-bar-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width .4s ease; }
+    .progress-bar-fill.purple { background: var(--accent4); }
+
+    .quiz-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; }
+    .q-counter { font-family: 'Space Mono', monospace; font-size: .8rem; color: var(--muted); }
+    .q-counter strong { color: var(--text); }
+    .quiz-label-pill {
+      font-family: 'Space Mono', monospace;
+      font-size: .65rem;
+      font-weight: 700;
+      padding: .25rem .6rem;
+      border-radius: 4px;
+      background: var(--accent);
+      color: #000;
+      letter-spacing: .08em;
+    }
+    .quiz-label-pill.purple { background: var(--accent4); color: #fff; }
+
+    .timer-ring-wrap { display: flex; align-items: center; gap: .6rem; }
+    .timer-svg { width: 48px; height: 48px; transform: rotate(-90deg); }
+    .timer-bg { fill: none; stroke: var(--surface2); stroke-width: 4; }
+    .timer-arc { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 126; stroke-dashoffset: 0; transition: stroke-dashoffset .9s linear, stroke .3s; }
+    .timer-label { font-family: 'Space Mono', monospace; font-size: .85rem; color: var(--text); min-width: 38px; }
+
+    .question-text { font-size: 1.1rem; font-weight: 600; line-height: 1.5; margin-bottom: 1.5rem; }
+
+    /* Quiz 3 — open-ended */
+    .open-answer-box {
+      width: 100%;
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      font-size: .9rem;
+      padding: 1rem;
+      outline: none;
+      resize: vertical;
+      min-height: 120px;
+      transition: border-color .2s;
+    }
+    .open-answer-box:focus { border-color: var(--accent); }
+    .char-count { font-size: .75rem; color: var(--muted); text-align: right; margin-top: .3rem; font-family: 'Space Mono', monospace; }
+
+    /* Quiz 4 — MCQ */
+    .options { display: flex; flex-direction: column; gap: .75rem; }
+    .option {
+      background: var(--surface2);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      padding: .9rem 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: .9rem;
+      font-size: .95rem;
+      transition: all .18s;
+      user-select: none;
+    }
+    .option:hover:not(.disabled) { border-color: var(--accent4); background: rgba(123,140,255,.07); }
+    .option-letter {
+      font-family: 'Space Mono', monospace;
+      font-size: .8rem;
+      background: var(--border);
+      color: var(--muted);
+      border-radius: 6px;
+      width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      transition: all .18s;
+    }
+    .option.correct { border-color: var(--accent); background: rgba(0,229,160,.12); }
+    .option.correct .option-letter { background: var(--accent); color: #000; }
+    .option.wrong { border-color: var(--accent2); background: rgba(255,77,109,.1); }
+    .option.wrong .option-letter { background: var(--accent2); color: #fff; }
+    .option.disabled { cursor: default; }
+
+    .feedback { margin-top: 1.2rem; padding: .85rem 1rem; border-radius: 8px; font-size: .9rem; font-weight: 600; display: none; }
+    .feedback.show { display: block; }
+    .feedback.correct { background: rgba(0,229,160,.1); color: var(--accent); border: 1px solid rgba(0,229,160,.25); }
+    .feedback.wrong   { background: rgba(255,77,109,.1); color: var(--accent2); border: 1px solid rgba(255,77,109,.25); }
+    .feedback.timeout { background: rgba(255,209,102,.1); color: var(--accent3); border: 1px solid rgba(255,209,102,.25); }
+    .feedback.saved   { background: rgba(123,140,255,.1); color: var(--accent4); border: 1px solid rgba(123,140,255,.25); }
+
+    .next-btn-wrap { margin-top: 1.4rem; text-align: right; display: none; }
+    .next-btn-wrap.show { display: block; }
+    .btn-next {
+      background: transparent;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      font-family: 'Space Mono', monospace;
+      font-size: .85rem;
+      padding: .6rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-next:hover { background: var(--accent); color: #000; }
+    .btn-next.purple { border-color: var(--accent4); color: var(--accent4); }
+    .btn-next.purple:hover { background: var(--accent4); color: #fff; }
+    .btn-submit-open {
+      background: var(--accent4);
+      color: #fff;
+      border: none;
+      font-family: 'Syne', sans-serif;
+      font-size: .9rem;
+      font-weight: 700;
+      padding: .7rem 1.4rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all .2s;
+      margin-top: 1rem;
+      width: 100%;
+    }
+    .btn-submit-open:hover { filter: brightness(1.1); }
+
+    /* RESULTS */
+    .score-display { text-align: center; padding: 1.5rem 0; }
+    .score-big { font-size: 5rem; font-weight: 800; color: var(--accent); font-family: 'Space Mono', monospace; line-height: 1; }
+    .score-big.purple { color: var(--accent4); }
+    .score-label { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+    .result-breakdown { margin-top: 1.8rem; display: flex; flex-direction: column; gap: .6rem; }
+    .breakdown-item {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      font-size: .85rem;
+      display: flex;
+      gap: .6rem;
+      align-items: flex-start;
+    }
+    .breakdown-item .icon { flex-shrink: 0; font-size: 1rem; margin-top: .05rem; }
+    .breakdown-item .q-text { color: var(--muted); margin-bottom: .25rem; font-size: .8rem; }
+    .breakdown-item .a-text { font-weight: 600; }
+    .breakdown-item.ok .a-text { color: var(--accent); }
+    .breakdown-item.open-ans .a-text { color: var(--accent4); }
+    .breakdown-item.bad .a-text { color: var(--accent2); }
+    .breakdown-item .correct-ans { color: var(--accent); font-size: .78rem; margin-top: .2rem; }
+    .result-meta { margin-top: 1.5rem; padding: 1rem; background: var(--surface2); border-radius: 8px; font-family: 'Space Mono', monospace; font-size: .8rem; color: var(--muted); }
+    .result-meta strong { color: var(--text); }
+    .submit-status { margin-top: 1.2rem; padding: .75rem 1rem; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: .8rem; display: none; }
+    .submit-status.submitting { display: block; background: rgba(255,209,102,.1); color: var(--accent3); border: 1px solid rgba(255,209,102,.25); }
+    .submit-status.success    { display: block; background: rgba(0,229,160,.1);  color: var(--accent);  border: 1px solid rgba(0,229,160,.25); }
+    .submit-status.error      { display: block; background: rgba(255,77,109,.1); color: var(--accent2); border: 1px solid rgba(255,77,109,.25); }
+    .btn-restart { margin-top: 1.5rem; background: transparent; border: 1.5px solid var(--border); color: var(--muted); font-family: 'Syne', sans-serif; font-size: .9rem; font-weight: 600; padding: .7rem 1.4rem; border-radius: 8px; cursor: pointer; transition: all .2s; width: 100%; }
+    .btn-restart:hover { border-color: var(--text); color: var(--text); }
+
+    @media (max-width: 480px) {
+      .row-2, .quiz-picker { grid-template-columns: 1fr; }
+      h1 { font-size: 1.6rem; }
+      .score-big { font-size: 3.5rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- ══ SCREEN 1: Credentials ══ -->
+  <div class="screen active" id="screen-creds">
+    <div class="card">
+      <div class="badge">Open Source Quiz</div>
+      <h1>Enter Your <span>Details</span></h1>
+      <p class="subtitle">Fill in your information then pick your quiz.</p>
+
+      <div class="row-2">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" id="inp-fname" placeholder="Juan"/>
+          <div class="error-msg" id="err-fname">Required</div>
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" id="inp-lname" placeholder="Dela Cruz"/>
+          <div class="error-msg" id="err-lname">Required</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email / Student ID</label>
+        <input type="text" id="inp-email" placeholder="student@school.edu"/>
+        <div class="error-msg" id="err-email">Required</div>
+      </div>
+      <div class="form-group">
+        <label>Section / Course</label>
+        <input type="text" id="inp-section" placeholder="BSIT 2A"/>
+      </div>
+
+      <hr class="divider"/>
+
+      <label style="margin-bottom:.8rem;display:block;">Choose Your Quiz</label>
+      <div class="quiz-picker">
+        <div class="quiz-card" id="pick-q3" onclick="selectQuiz(3)">
+          <div class="quiz-num">3</div>
+          <div class="quiz-title">Open Source Licenses</div>
+          <div class="quiz-desc">5 open-ended questions · 3 min each</div>
+        </div>
+        <div class="quiz-card q4" id="pick-q4" onclick="selectQuiz(4)">
+          <div class="quiz-num" style="color:var(--accent4)">4</div>
+          <div class="quiz-title">Open Source Hardware</div>
+          <div class="quiz-desc">10 multiple-choice · 3 min each</div>
+        </div>
+      </div>
+      <div class="error-pick" id="err-pick">Please choose a quiz to continue.</div>
+
+      <hr class="divider"/>
+      <button class="btn btn-primary" onclick="startQuiz()">Start Quiz →</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: Quiz ══ -->
+  <div class="screen" id="screen-quiz">
+    <div class="card">
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+      <div class="quiz-top">
+        <div style="display:flex;align-items:center;gap:.6rem;">
+          <span class="quiz-label-pill" id="quiz-pill">QUIZ 3</span>
+          <span class="q-counter">Q <strong id="q-num">1</strong> / <strong id="q-total">5</strong></span>
+        </div>
+        <div class="timer-ring-wrap">
+          <svg class="timer-svg" viewBox="0 0 44 44">
+            <circle class="timer-bg" cx="22" cy="22" r="20"/>
+            <circle class="timer-arc" id="timer-arc" cx="22" cy="22" r="20"/>
+          </svg>
+          <span class="timer-label" id="timer-label">3:00</span>
+        </div>
+      </div>
+
+      <div class="question-text" id="question-text"></div>
+
+      <!-- MCQ options (Quiz 4) -->
+      <div class="options" id="options-container" style="display:none;"></div>
+
+      <!-- Open-ended answer (Quiz 3) -->
+      <div id="open-container" style="display:none;">
+        <textarea class="open-answer-box" id="open-answer" placeholder="Type your answer here…" oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="char-count">0 characters</div>
+        <button class="btn-submit-open" onclick="submitOpenAnswer()">Save Answer & Continue →</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+      <div class="next-btn-wrap" id="next-wrap">
+        <button class="btn-next" id="next-btn" onclick="nextQuestion()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: Results ══ -->
+  <div class="screen" id="screen-results">
+    <div class="card">
+      <div class="badge" id="result-badge">Quiz Complete</div>
+      <div class="score-display">
+        <div class="score-big" id="score-pct">—</div>
+        <div class="score-label" id="score-sub"></div>
+      </div>
+      <div class="result-meta" id="result-meta"></div>
+      <hr class="divider"/>
+      <h2 style="font-size:1rem;margin-bottom:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Review</h2>
+      <div class="result-breakdown" id="result-breakdown"></div>
+      <div class="submit-status" id="submit-status"></div>
+      <button class="btn-restart" onclick="restartQuiz()">↺ Take Another Quiz</button>
+    </div>
+  </div>
+
+</div>
+<script>
+// ════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════
+const QUIZ3 = [
+  { q: "What is the difference between a permissive license and a copyleft license?" },
+  { q: "What are the primary flavors (categories) of Open Source Software licenses?" },
+  { q: "What makes the MIT License different from other open source licenses?" },
+  { q: "What makes the BSD 2-Clause (FreeBSD) license different from the BSD 3-Clause license?" },
+  { q: "What is the license term of the GNU General Public License (GNU GPL)?" }
+];
+
+const QUIZ4 = [
+  {
+    q: "According to the lecture, what does 'open-source hardware' primarily refer to?",
+    opts: [
+      "Hardware that does not require any software to function.",
+      "Design specifications of a physical object licensed for study, modification, and distribution.",
+      "Any hardware that is provided to the user at no cost.",
+      "A specific type of physical object that cannot be sold."
+    ],
+    ans: 1
+  },
+  {
+    q: "Which of the following is a primary reason why open hardware usually requires more monetary investment than open software?",
+    opts: [
+      "Open hardware is not allowed to be 'gratis'.",
+      "Hardware requires physical materials and tools for prototyping.",
+      "Software does not require any labor costs.",
+      "The licensing fees for hardware are more expensive."
+    ],
+    ans: 1
+  },
+  {
+    q: "What must accompany all open-source hardware according to the design principles mentioned?",
+    opts: [
+      "A patent filing for the original inventor.",
+      "A physical prototype of the object.",
+      "Documentation including design files and source code.",
+      "A non-disclosure agreement (NDA)."
+    ],
+    ans: 2
+  },
+  {
+    q: "In what year did Bruce Perens launch the Open Hardware Certification Program?",
+    opts: ["1997", "2011", "1982", "2004"],
+    ans: 0
+  },
+  {
+    q: "Which organization created the first hardware-specific open-source license in 2007?",
+    opts: [
+      "Open Source Hardware Association (OSHWA)",
+      "Debian Developers",
+      "Tucson Amateur Packet Radio (TAPR)",
+      "CERN"
+    ],
+    ans: 2
+  },
+  {
+    q: "Based on the business model matrix, how can a company 'make money' while using OSHW?",
+    opts: [
+      "Charging users for the 'Four Freedoms'.",
+      "By keeping the design files secret and charging for access.",
+      "By preventing others from modifying the hardware.",
+      "Selling the physical products, services, or training workshops."
+    ],
+    ans: 3
+  },
+  {
+    q: "What is a key difference in 'commercialization' between OSS and OSHW as shown in the Venn diagram?",
+    opts: [
+      "OSS is always commercial, while OSHW is never commercial.",
+      "OSHW projects are usually large and singular like Linux.",
+      "OSS often has controlled commercialization, whereas OSHW is often fragmented.",
+      "Only OSHW allows for royalty-free products."
+    ],
+    ans: 2
+  },
+  {
+    q: "The 'OHANDA' initiative seeks to achieve several goals. Which of these is NOT one of them?",
+    opts: [
+      "Create a venue for time-stamping and quality control.",
+      "Make documentation publicly accessible.",
+      "Ensure openness and protect common knowledge.",
+      "Create a monopoly over specific hardware designs."
+    ],
+    ans: 3
+  },
+  {
+    q: "According to Javier Serrano from CERN, what is a major benefit of peer review in open hardware?",
+    opts: [
+      "It improves design quality and guarantees freedom to modify.",
+      "It allows CERN to own the copyright of all submitted designs.",
+      "It guarantees that no two people will ever build the same thing.",
+      "It ensures that only commercial companies can use the designs."
+    ],
+    ans: 0
+  },
+  {
+    q: "Which organization was established in 2012 to organize conferences and facilitate STEM education through open hardware?",
+    opts: [
+      "Open Source Hardware Association (OSHWA)",
+      "Open Design Circuits",
+      "Traversal Technology Inc.",
+      "The Linux Fund"
+    ],
+    ans: 0
+  }
+];
+
+// ════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════
+const TIMER_SECONDS = 180;
+const CIRCUMFERENCE = 2 * Math.PI * 20;
+const SESSION_KEY   = 'quiz34_session';
+const SHEET_URL     = 'https://script.google.com/macros/s/AKfycbw12YJ95KhZGv29weN1BiVvjzSPDkHlMaU4RKBl8N6k1e_hlbg31kiJh0VWrLRkGrUL/exec';
+
+let student      = {};
+let chosenQuiz   = 0;   // 3 or 4
+let questions    = [];
+let currentQ     = 0;
+let score        = 0;
+let answers      = [];
+let timerInterval= null;
+let secondsLeft  = TIMER_SECONDS;
+let answered     = false;
+
+// ════════════════════════════════════════
+//  SESSION
+// ════════════════════════════════════════
+function saveSession() {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({
+    student, chosenQuiz, currentQ, score, answers, secondsLeft, answered
+  }));
+}
+function loadSession() {
+  try { return JSON.parse(sessionStorage.getItem(SESSION_KEY)); } catch { return null; }
+}
+function clearSession() { sessionStorage.removeItem(SESSION_KEY); }
+
+// ════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════
+(function boot() {
+  const sess = loadSession();
+  if (!sess) { showScreen('screen-creds'); return; }
+  student     = sess.student;
+  chosenQuiz  = sess.chosenQuiz;
+  currentQ    = sess.currentQ;
+  score       = sess.score;
+  answers     = sess.answers;
+  secondsLeft = sess.secondsLeft;
+  answered    = sess.answered;
+  questions   = chosenQuiz === 3 ? QUIZ3 : QUIZ4;
+
+  applyQuizTheme();
+  document.getElementById('q-total').textContent = questions.length;
+
+  if (currentQ >= questions.length) {
+    renderResultsOnly();
+  } else {
+    showScreen('screen-quiz');
+    renderQuestion(true);
+  }
+})();
+
+// ════════════════════════════════════════
+//  QUIZ SELECTION
+// ════════════════════════════════════════
+function selectQuiz(n) {
+  chosenQuiz = n;
+  document.getElementById('pick-q3').classList.toggle('selected', n === 3);
+  document.getElementById('pick-q4').classList.toggle('selected', n === 4);
+  document.getElementById('err-pick').classList.remove('show');
+}
+
+function applyQuizTheme() {
+  const isQ4 = chosenQuiz === 4;
+  document.getElementById('quiz-pill').textContent = `QUIZ ${chosenQuiz}`;
+  document.getElementById('quiz-pill').className = 'quiz-label-pill' + (isQ4 ? ' purple' : '');
+  document.getElementById('progress-fill').className = 'progress-bar-fill' + (isQ4 ? ' purple' : '');
+  document.getElementById('next-btn').className = 'btn-next' + (isQ4 ? ' purple' : '');
+  document.getElementById('result-badge').textContent = `Quiz ${chosenQuiz} Complete`;
+  document.getElementById('score-pct').className = 'score-big' + (isQ4 ? ' purple' : '');
+}
+
+// ════════════════════════════════════════
+//  SCREENS
+// ════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+// ════════════════════════════════════════
+//  START
+// ════════════════════════════════════════
+function startQuiz() {
+  const fname   = document.getElementById('inp-fname').value.trim();
+  const lname   = document.getElementById('inp-lname').value.trim();
+  const email   = document.getElementById('inp-email').value.trim();
+  const section = document.getElementById('inp-section').value.trim();
+
+  let valid = true;
+  ['fname','lname','email'].forEach(f => {
+    const val = document.getElementById(`inp-${f}`).value.trim();
+    const err = document.getElementById(`err-${f}`);
+    if (!val) { err.classList.add('show'); valid = false; }
+    else err.classList.remove('show');
+  });
+  if (!chosenQuiz) { document.getElementById('err-pick').classList.add('show'); valid = false; }
+  if (!valid) return;
+
+  student     = { fname, lname, email, section, startTime: new Date().toISOString() };
+  questions   = chosenQuiz === 3 ? QUIZ3 : QUIZ4;
+  currentQ    = 0; score = 0; answers = [];
+  secondsLeft = TIMER_SECONDS; answered = false;
+
+  document.getElementById('q-total').textContent = questions.length;
+  applyQuizTheme();
+  saveSession();
+  showScreen('screen-quiz');
+  renderQuestion(false);
+}
+
+// ════════════════════════════════════════
+//  RENDER QUESTION
+// ════════════════════════════════════════
+function renderQuestion(resume) {
+  if (!resume) { answered = false; secondsLeft = TIMER_SECONDS; }
+
+  const q = questions[currentQ];
+  document.getElementById('q-num').textContent = currentQ + 1;
+  document.getElementById('progress-fill').style.width =
+    ((currentQ / questions.length) * 100) + '%';
+  document.getElementById('question-text').textContent = q.q;
+
+  const fb = document.getElementById('feedback');
+  fb.className = 'feedback';
+  fb.textContent = '';
+  document.getElementById('next-wrap').classList.remove('show');
+
+  if (chosenQuiz === 4) {
+    // MCQ
+    document.getElementById('options-container').style.display = 'flex';
+    document.getElementById('open-container').style.display = 'none';
+    renderMCQ(q, resume);
+  } else {
+    // Open-ended
+    document.getElementById('options-container').style.display = 'none';
+    document.getElementById('open-container').style.display = 'block';
+    const ta = document.getElementById('open-answer');
+    if (resume && answered) {
+      const last = answers[answers.length - 1];
+      ta.value = last?.text || '';
+      ta.disabled = true;
+      updateCharCount();
+      showFeedback('saved', '✓ Answer saved. Click Next to continue.');
+      document.getElementById('next-wrap').classList.add('show');
+    } else {
+      ta.value = '';
+      ta.disabled = false;
+      updateCharCount();
+    }
+  }
+
+  startTimer();
+  saveSession();
+}
+
+function renderMCQ(q, resume) {
+  const letters = ['A','B','C','D'];
+  const container = document.getElementById('options-container');
+  container.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const el = document.createElement('div');
+    el.className = 'option';
+    el.innerHTML = `<span class="option-letter">${letters[i]}</span><span>${opt}</span>`;
+    el.addEventListener('click', () => selectMCQ(i));
+    container.appendChild(el);
+  });
+
+  if (resume && answered) {
+    const last = answers[answers.length - 1];
+    restoreMCQState(last);
+  }
+}
+
+function restoreMCQState(a) {
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('disabled'));
+  const q = questions[currentQ];
+  if (a.selected !== null) {
+    opts[a.selected].classList.add(a.correct ? 'correct' : 'wrong');
+    if (!a.correct) opts[q.ans].classList.add('correct');
+    showFeedback(a.correct ? 'correct' : 'wrong',
+      a.correct ? '✓ Correct!' : `✗ Incorrect. Correct answer: ${q.opts[q.ans]}`);
+  } else {
+    opts[q.ans].classList.add('correct');
+    showFeedback('timeout', `⏰ Time's up! Correct: ${q.opts[q.ans]}`);
+  }
+  document.getElementById('next-wrap').classList.add('show');
+}
+
+// ════════════════════════════════════════
+//  TIMER
+// ════════════════════════════════════════
+function startTimer() {
+  clearInterval(timerInterval);
+  updateTimerUI(secondsLeft);
+  if (answered) return;
+
+  timerInterval = setInterval(() => {
+    secondsLeft--;
+    saveSession();
+    updateTimerUI(secondsLeft);
+    if (secondsLeft <= 0) { clearInterval(timerInterval); timeOut(); }
+  }, 1000);
+}
+
+function updateTimerUI(s) {
+  const mins = Math.floor(s / 60);
+  const secs = s % 60;
+  document.getElementById('timer-label').textContent = `${mins}:${secs.toString().padStart(2,'0')}`;
+  const arc = document.getElementById('timer-arc');
+  const ratio = s / TIMER_SECONDS;
+  arc.style.strokeDashoffset = CIRCUMFERENCE * (1 - ratio);
+  arc.style.stroke = ratio > .5 ? 'var(--accent)' : ratio > .25 ? 'var(--accent3)' : 'var(--accent2)';
+}
+
+function timeOut() {
+  if (answered) return;
+  answered = true;
+
+  if (chosenQuiz === 4) {
+    document.querySelectorAll('.option').forEach(o => o.classList.add('disabled'));
+    document.querySelectorAll('.option')[questions[currentQ].ans].classList.add('correct');
+    showFeedback('timeout', `⏰ Time's up! Correct: ${questions[currentQ].opts[questions[currentQ].ans]}`);
+    answers.push({ selected: null, correct: false });
+  } else {
+    const ta = document.getElementById('open-answer');
+    const text = ta.value.trim();
+    ta.disabled = true;
+    answers.push({ text: text || '(no answer — timed out)', correct: null });
+    showFeedback('timeout', "⏰ Time's up! Your answer has been saved.");
+  }
+  document.getElementById('next-wrap').classList.add('show');
+  saveSession();
+}
+
+// ════════════════════════════════════════
+//  MCQ SELECT
+// ════════════════════════════════════════
+function selectMCQ(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+  const q = questions[currentQ];
+  const isCorrect = idx === q.ans;
+  if (isCorrect) score++;
+  answers.push({ selected: idx, correct: isCorrect });
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => o.classList.add('disabled'));
+  opts[idx].classList.add(isCorrect ? 'correct' : 'wrong');
+  if (!isCorrect) opts[q.ans].classList.add('correct');
+  showFeedback(isCorrect ? 'correct' : 'wrong',
+    isCorrect ? '✓ Correct!' : `✗ Incorrect. Correct answer: ${q.opts[q.ans]}`);
+  document.getElementById('next-wrap').classList.add('show');
+  saveSession();
+}
+
+// ════════════════════════════════════════
+//  OPEN-ENDED SUBMIT
+// ════════════════════════════════════════
+function submitOpenAnswer() {
+  if (answered) return;
+  const ta = document.getElementById('open-answer');
+  const text = ta.value.trim();
+  if (!text) {
+    showFeedback('wrong', '✗ Please write something before saving.');
+    document.getElementById('feedback').classList.add('show');
+    return;
+  }
+  answered = true;
+  clearInterval(timerInterval);
+  ta.disabled = true;
+  answers.push({ text, correct: null });
+  showFeedback('saved', '✓ Answer saved!');
+  document.getElementById('next-wrap').classList.add('show');
+  saveSession();
+}
+
+function updateCharCount() {
+  const len = document.getElementById('open-answer').value.length;
+  document.getElementById('char-count').textContent = `${len} character${len !== 1 ? 's' : ''}`;
+}
+
+function showFeedback(type, msg) {
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback ${type} show`;
+  fb.textContent = msg;
+}
+
+// ════════════════════════════════════════
+//  NEXT
+// ════════════════════════════════════════
+function nextQuestion() {
+  currentQ++;
+  answered = false;
+  secondsLeft = TIMER_SECONDS;
+  saveSession();
+  if (currentQ >= questions.length) showResults();
+  else renderQuestion(false);
+}
+
+// ════════════════════════════════════════
+//  RESULTS
+// ════════════════════════════════════════
+function showResults() {
+  clearInterval(timerInterval);
+  document.getElementById('progress-fill').style.width = '100%';
+  renderResultsOnly();
+  saveResult();
+  clearSession();
+}
+
+function renderResultsOnly() {
+  applyQuizTheme();
+  const isQ4 = chosenQuiz === 4;
+
+  if (isQ4) {
+    const pct = Math.round((score / questions.length) * 100);
+    document.getElementById('score-pct').textContent = pct + '%';
+    document.getElementById('score-sub').textContent = `${score} / ${questions.length} correct`;
+  } else {
+    document.getElementById('score-pct').textContent = answers.length + '/' + questions.length;
+    document.getElementById('score-sub').textContent = 'Questions answered — your teacher will grade the responses';
+  }
+
+  document.getElementById('result-meta').innerHTML =
+    `<strong>${student.fname} ${student.lname}</strong> &nbsp;|&nbsp; ${student.email}` +
+    (student.section ? ` &nbsp;|&nbsp; ${student.section}` : '') +
+    `<br/>Quiz ${chosenQuiz} — Completed: ${new Date().toLocaleString()}`;
+
+  const bd = document.getElementById('result-breakdown');
+  bd.innerHTML = '';
+  answers.forEach((a, i) => {
+    const q = questions[i];
+    const el = document.createElement('div');
+    if (isQ4) {
+      el.className = `breakdown-item ${a.correct ? 'ok' : 'bad'}`;
+      const userAns = a.selected !== null ? QUIZ4[i].opts[a.selected] : 'No answer (timed out)';
+      el.innerHTML = `
+        <div class="icon">${a.correct ? '✓' : '✗'}</div>
+        <div>
+          <div class="q-text">Q${i+1}: ${q.q}</div>
+          <div class="a-text">${userAns}</div>
+          ${!a.correct ? `<div class="correct-ans">Correct: ${QUIZ4[i].opts[QUIZ4[i].ans]}</div>` : ''}
+        </div>`;
+    } else {
+      el.className = 'breakdown-item open-ans';
+      el.innerHTML = `
+        <div class="icon">📝</div>
+        <div>
+          <div class="q-text">Q${i+1}: ${q.q}</div>
+          <div class="a-text">${a.text || '(no answer)'}</div>
+        </div>`;
+    }
+    bd.appendChild(el);
+  });
+
+  showScreen('screen-results');
+}
+
+async function saveResult() {
+  const isQ4 = chosenQuiz === 4;
+  const pct  = isQ4 ? Math.round((score / questions.length) * 100) : null;
+
+  let answerSummary;
+  if (isQ4) {
+    answerSummary = answers.map((a, i) => {
+      const chosen = a.selected !== null ? QUIZ4[i].opts[a.selected] : 'Timed out';
+      return `Q${i+1}: ${a.correct ? '✓' : '✗'} ${chosen}`;
+    }).join(' | ');
+  } else {
+    answerSummary = answers.map((a, i) => `Q${i+1}: ${a.text}`).join(' || ');
+  }
+
+  const payload = {
+    name: `${student.fname} ${student.lname}`,
+    email: student.email,
+    section: student.section || '—',
+    score: isQ4 ? `${score}/${questions.length}` : 'Open-ended (see answers)',
+    total: questions.length,
+    pct: isQ4 ? pct : 'N/A',
+    answers: `[Quiz ${chosenQuiz}] ${answerSummary}`
+  };
+
+  const statusEl = document.getElementById('submit-status');
+  statusEl.className = 'submit-status submitting';
+  statusEl.textContent = '⏳ Submitting to Google Sheets…';
+
+  try {
+    await fetch(SHEET_URL, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    statusEl.className = 'submit-status success';
+    statusEl.textContent = '✓ Result recorded to Google Sheets!';
+  } catch {
+    statusEl.className = 'submit-status error';
+    statusEl.textContent = '✗ Could not submit — check your internet connection.';
+  }
+}
+
+function restartQuiz() {
+  clearSession();
+  chosenQuiz = 0;
+  showScreen('screen-creds');
+  document.getElementById('pick-q3').classList.remove('selected');
+  document.getElementById('pick-q4').classList.remove('selected');
+}
+</script>
+</body>
+</html>
